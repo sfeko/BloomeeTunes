@@ -1,13 +1,14 @@
-// ignore_for_file: public_member_api_docs, sort_constructors_first
+/// 外部媒体导入工具类
+/// 提供从YouTube、YouTube Music和Spotify等外部平台导入媒体内容的功能
+/// 支持导入单个媒体项和播放列表
+
 import 'dart:async';
 import 'dart:developer';
-// import 'package:Bloomee/model/source_engines.dart';
 import 'package:Bloomee/model/yt_music_model.dart';
 import 'package:Bloomee/repository/MixedAPI/mixed_api.dart';
 import 'package:Bloomee/repository/Spotify/spotify_api.dart';
 import 'package:Bloomee/repository/Youtube/yt_music_api.dart';
 import 'package:Bloomee/screens/widgets/snackbar.dart';
-// import 'package:Bloomee/utils/country_info.dart';
 import 'package:Bloomee/utils/url_checker.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 import 'package:Bloomee/model/songModel.dart';
@@ -15,12 +16,20 @@ import 'package:Bloomee/model/youtube_vid_model.dart';
 import 'package:Bloomee/repository/Youtube/youtube_api.dart';
 import 'package:Bloomee/services/db/bloomee_db_service.dart';
 
+/// 导入器状态类
+/// 用于跟踪导入过程的状态和进度
 class ImporterState {
+  /// 总项目数
   int totalItems = 0;
+  /// 已导入项目数
   int importedItems = 0;
+  /// 导入失败项目数
   int failedItems = 0;
+  /// 是否完成
   bool isDone = false;
+  /// 是否失败
   bool isFailed = false;
+  /// 状态消息
   String message = "";
   ImporterState({
     required this.totalItems,
@@ -31,6 +40,14 @@ class ImporterState {
     required this.message,
   });
 
+  /// 创建状态副本
+  /// @param totalItems 总项目数
+  /// @param importedItems 已导入项目数
+  /// @param failedItems 失败项目数
+  /// @param isDone 是否完成
+  /// @param isFailed 是否失败
+  /// @param message 状态消息
+  /// @return 返回新的状态实例
   ImporterState copyWith({
     int? totalItems,
     int? importedItems,
@@ -50,7 +67,12 @@ class ImporterState {
   }
 }
 
+/// 外部媒体导入器类
+/// 提供从各种外部平台导入媒体内容的方法
 class ExternalMediaImporter {
+  /// 导入YouTube播放列表
+  /// @param url YouTube播放列表URL
+  /// @return 返回导入状态流，包含导入进度和状态信息
   static Stream<ImporterState> ytPlaylistImporter(String url) async* {
     Uri uri = Uri.parse(url);
     int count = 0;
@@ -134,6 +156,9 @@ class ExternalMediaImporter {
     }
   }
 
+  /// 导入YouTube Music播放列表
+  /// @param url YouTube Music播放列表URL
+  /// @return 返回导入状态流，包含导入进度和状态信息
   static Stream<ImporterState> ytmPlaylistImporter(String url) async* {
     Uri uri = Uri.parse(url);
     int count = 0;
@@ -203,6 +228,9 @@ class ExternalMediaImporter {
     }
   }
 
+  /// 导入单个YouTube视频
+  /// @param url YouTube视频URL
+  /// @return 返回导入的媒体项，如果导入失败返回null
   static Future<MediaItemModel?> ytMediaImporter(String url) async {
     final videoId = extractVideoId(url);
     SnackbarService.showMessage("Getting Youtube Audio...", loading: true);
@@ -225,6 +253,9 @@ class ExternalMediaImporter {
     return null;
   }
 
+  /// 导入单个YouTube Music音乐
+  /// @param url YouTube Music音乐URL
+  /// @return 返回导入的媒体项，如果导入失败返回null
   static Future<MediaItemModel?> ytmMediaImporter(String url) async {
     final videoId = extractYTMusicId(url);
     SnackbarService.showMessage("Getting Youtube Music Audio...",
@@ -246,6 +277,10 @@ class ExternalMediaImporter {
     return null;
   }
 
+  /// 导入Spotify播放列表
+  /// @param url Spotify播放列表URL
+  /// @param playlistID 可选的播放列表ID，如果不提供则从URL中提取
+  /// @return 返回导入状态流，包含导入进度和状态信息
   static Stream<ImporterState> sfyPlaylistImporter(
       {required String url, String? playlistID}) async* {
     playlistID ??= extractSpotifyPlaylistId(url);
@@ -366,6 +401,9 @@ class ExternalMediaImporter {
     }
   }
 
+  /// 导入单个Spotify音乐
+  /// @param url Spotify音乐URL
+  /// @return 返回导入的媒体项，如果导入失败返回null
   static Future<MediaItemModel?> sfyMediaImporter(String url) async {
     final accessToken = await SpotifyApi().getAccessTokenCC();
     SnackbarService.showMessage("Getting Spotify track using MixedAPIs...",
@@ -380,16 +418,9 @@ class ExternalMediaImporter {
 
         if (title.isNotEmpty) {
           MediaItemModel? mediaItem;
-          // final country = await getCountry();
-          // if (sourceEngineCountries[SourceEngine.eng_JIS]!.contains(country)) {
-          //   log("Getting from MixedAPI", name: "Playlist Importer");
-          //   mediaItem =
-          //       await MixedAPI().getTrackMixed("$title $artists".trim());
-          // } else {
           log("Getting from YTM", name: "Playlist Importer");
           mediaItem =
               await MixedAPI().getYtTrackByMeta("$title $artists".trim());
-          // }
           if (mediaItem != null) {
             log("Got: ${mediaItem.title}", name: "Spotify Importer");
             SnackbarService.showMessage(
@@ -410,6 +441,10 @@ class ExternalMediaImporter {
     return null;
   }
 
+  /// 导入Spotify专辑
+  /// @param url Spotify专辑URL
+  /// @param albumID 可选的专辑ID，如果不提供则从URL中提取
+  /// @return 返回导入状态流，包含导入进度和状态信息
   static Stream<ImporterState> sfyAlbumImporter(
       {required String url, String? albumID}) async* {
     albumID ??= extractSpotifyAlbumId(url);
@@ -453,17 +488,9 @@ class ExternalMediaImporter {
             log("$title by $artists", name: "Album Importer");
             if (title.isNotEmpty) {
               MediaItemModel? mediaItem;
-              // final country = await getCountry();
-              // if (sourceEngineCountries[SourceEngine.eng_JIS]!
-              //     .contains(country)) {
-              //   log("Getting from MixedAPI", name: "Playlist Importer");
-              //   mediaItem =
-              //       await MixedAPI().getTrackMixed("$title $artists".trim());
-              // } else {
               log("Getting from YTM", name: "Playlist Importer");
               mediaItem =
                   await MixedAPI().getYtTrackByMeta("$title $artists".trim());
-              // }
               if (mediaItem != null) {
                 BloomeeDBService.addMediaItem(
                     MediaItem2MediaItemDB(mediaItem), albumTitle);

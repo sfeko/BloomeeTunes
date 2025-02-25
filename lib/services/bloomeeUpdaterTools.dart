@@ -4,12 +4,20 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
 
+/// 检查是否有新版本可用
+/// @param currentVer 当前版本号
+/// @param currentBuild 当前构建号
+/// @param newVer 新版本号
+/// @param newBuild 新构建号
+/// @param checkBuild 是否检查构建号（默认为true）
+/// @return 如果有新版本返回true，否则返回false
 bool isUpdateAvailable(
     String currentVer, String currentBuild, String newVer, String newBuild,
     {bool checkBuild = true}) {
   List<int> currentVersionParts = currentVer.split('.').map(int.parse).toList();
   List<int> newVersionParts = newVer.split('.').map(int.parse).toList();
 
+  // 比较版本号的每个部分
   for (int i = 0; i < currentVersionParts.length; i++) {
     if (newVersionParts[i] > currentVersionParts[i]) {
       return true;
@@ -18,12 +26,10 @@ bool isUpdateAvailable(
     }
   }
 
-  if (checkBuild && !Platform.isLinux) {
+  // 如果需要检查构建号
+  if (checkBuild) {
     int currentBuildNumber = int.parse(currentBuild);
     int newBuildNumber = int.parse(newBuild);
-    if (currentBuildNumber > 1000) {
-      currentBuildNumber = currentBuildNumber % 1000;
-    }
 
     if (newBuildNumber > currentBuildNumber) {
       return true;
@@ -35,6 +41,9 @@ bool isUpdateAvailable(
   return false;
 }
 
+/// 从SourceForge获取更新信息
+/// 根据不同平台获取对应的更新包信息
+/// @return 包含更新信息的Map，包括新版本号、下载链接等
 Future<Map<String, dynamic>> sourceforgeUpdate() async {
   String platform = Platform.operatingSystem;
   if (platform == 'linux') {
@@ -45,6 +54,8 @@ Future<Map<String, dynamic>> sourceforgeUpdate() async {
     platform = 'win';
   }
   const url = 'https://sourceforge.net/projects/bloomee/best_release.json';
+  
+  // 针对不同平台设置不同的User-Agent
   final userAgent = {
     'win':
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36',
@@ -57,14 +68,19 @@ Future<Map<String, dynamic>> sourceforgeUpdate() async {
   final headers = {
     'user-agent': userAgent[platform]!,
   };
+  
+  // 获取当前应用版本信息
   PackageInfo packageInfo = await PackageInfo.fromPlatform();
   final response = await http.get(Uri.parse(url), headers: headers);
   log("response status code: ${response.statusCode}", name: 'UpdaterTools');
+  
   if (response.statusCode == 200) {
     final data = json.decode(response.body);
     final releaseUrl = data['release']['url'];
     final filename = data['release']['filename'];
     final fileNameParts = filename.split('/');
+    
+    // 解析版本号和构建号
     final versionMatch =
         RegExp(r'v(\d+\.\d+\.\d+)').firstMatch(fileNameParts.last);
     final buildMatch = RegExp(r'\+(\d+)').firstMatch(fileNameParts.last);
@@ -76,9 +92,7 @@ Future<Map<String, dynamic>> sourceforgeUpdate() async {
       'newBuild': build ?? '',
       'download_url': releaseUrl,
       'currVer': packageInfo.version,
-      'currBuild': int.parse(packageInfo.buildNumber) > 1000
-          ? int.parse(packageInfo.buildNumber) % 1000
-          : packageInfo.buildNumber,
+      'currBuild': packageInfo.buildNumber,
       'results': isUpdateAvailable(
         packageInfo.version,
         packageInfo.buildNumber,
@@ -89,14 +103,12 @@ Future<Map<String, dynamic>> sourceforgeUpdate() async {
     };
   } else {
     throw Exception('Failed to load latest version!');
-    // return {
-    //   'results': false,
-    //   'currVer': packageInfo.version,
-    //   'currBuild': packageInfo.buildNumber,
-    // };
   }
 }
 
+/// 从GitHub获取更新信息
+/// 通过GitHub API获取最新发布版本信息
+/// @return 包含更新信息的Map
 Future<Map<String, dynamic>> githubUpdate() async {
   http.Response response;
   try {
@@ -123,9 +135,7 @@ Future<Map<String, dynamic>> githubUpdate() async {
         checkBuild: false,
       ),
       "newBuild": newBuildVer,
-      "currBuild": int.parse(packageInfo.buildNumber) > 1000
-          ? int.parse(packageInfo.buildNumber) % 1000
-          : packageInfo.buildNumber,
+      "currBuild": packageInfo.buildNumber,
       "currVer": packageInfo.version,
       "newVer": data["tag_name"].toString().split("+")[0].replaceFirst("v", ''),
       // "download_url": extractUpUrl(data),
@@ -135,15 +145,22 @@ Future<Map<String, dynamic>> githubUpdate() async {
   } else {
     log('Failed to load latest version!', name: 'UpdaterTools');
     return {
-      "currBuild": int.parse(packageInfo.buildNumber) > 1000
-          ? int.parse(packageInfo.buildNumber) % 1000
-          : packageInfo.buildNumber,
+      "currBuild": packageInfo.buildNumber,
       "currVer": packageInfo.version,
       "results": false,
     };
   }
 }
 
+/// 获取最新版本信息
+/// 首先尝试从SourceForge获取更新信息，如果失败则从GitHub获取
+/// @return 包含更新信息的Map，包括：
+/// - results: 是否有新版本可用
+/// - newVer: 新版本号
+/// - newBuild: 新构建号
+/// - currVer: 当前版本号
+/// - currBuild: 当前构建号
+/// - download_url: 下载链接
 Future<Map<String, dynamic>> getLatestVersion() async {
   try {
     return await sourceforgeUpdate();
@@ -152,6 +169,9 @@ Future<Map<String, dynamic>> getLatestVersion() async {
   }
 }
 
+/// 从GitHub release资源中提取对应平台的下载链接
+/// @param data GitHub API返回的release数据
+/// @return 返回对应当前平台的下载链接，如果没有找到对应平台的下载链接则返回null
 String? extractUpUrl(Map<String, dynamic> data) {
   // List<String> urls = [];
 

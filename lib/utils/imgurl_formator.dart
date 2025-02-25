@@ -1,18 +1,38 @@
 // This page contains the code to format the image url.
 // it takes [imageURL, quality(low, medium, high)] and source as input and returns the formated image url.
 
+/// 图片URL格式化工具类
+/// 负责处理和格式化来自不同来源的图片URL
+/// 支持YouTube、JioSaavn、Spotify等多个平台的图片URL格式化
+
+/// 图片质量枚举
+/// 定义了三种图片质量级别：低、中、高
 enum ImageQuality { low, medium, high }
 
+/// 图片来源枚举
+/// 定义了支持的图片来源平台
 enum ImageSource {
+  /// YouTube平台
   yt,
+  /// JioSaavn平台
   jiosaavn,
+  /// Spotify平台
   spotify,
+  /// Billboard平台
   billboard,
+  /// Last.fm平台
   lastfm,
+  /// Melon平台
   melon,
+  /// 其他来源
   other,
 }
 
+/// 格式化图片URL
+/// 根据图片来源和所需质量返回适当格式的URL
+/// @param imgURL 原始图片URL
+/// @param quality 目标图片质量
+/// @return 返回格式化后的图片URL
 String formatImgURL(String imgURL, ImageQuality quality) {
   ImageSource source;
   if (imgURL.contains('youtube') ||
@@ -120,6 +140,11 @@ String formatImgURL(String imgURL, ImageQuality quality) {
   }
 }
 
+/// 格式化YouTube图片URL
+/// 根据质量要求调整YouTube缩略图的尺寸
+/// @param imgURL YouTube图片URL
+/// @param quality 目标图片质量
+/// @return 返回格式化后的YouTube图片URL
 String formatYtImgURL(String imgURL, ImageQuality quality) {
   // types of urls for youtube and youtube music
   // https://i.ytimg.com/vi/VIDEO_ID/maxresdefault.jpg

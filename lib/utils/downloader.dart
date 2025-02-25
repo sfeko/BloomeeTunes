@@ -13,8 +13,12 @@ import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:image/image.dart' as img;
 
+/// 将图片转换为正方形
+/// 通过扩展画布和调整大小来处理
+/// @param image 原始图片数据
+/// @return 返回处理后的正方形图片数据
 Future<Uint8List?> getSquareImg(Uint8List image) async {
-  // Load the original image
+  // 加载原始图片
   img.Image? originalImage = img.decodeImage(image);
 
   if (originalImage != null) {
@@ -35,7 +39,12 @@ Future<Uint8List?> getSquareImg(Uint8List image) async {
   return null;
 }
 
+/// Bloomee下载器类
+/// 提供文件下载和管理的核心功能
 class BloomeeDownloader {
+  /// 获取图片字节数据
+  /// @param url 图片URL
+  /// @return 返回图片的字节数据
   static Future<Uint8List> getImgBytes(String url) async {
     final client = HttpClient();
     final HttpClientRequest request = await client.getUrl(Uri.parse(url));
@@ -44,8 +53,12 @@ class BloomeeDownloader {
     return bytes;
   }
 
+  /// 下载文件到指定位置
+  /// @param url 文件URL
+  /// @param fileName 文件名
+  /// @return 返回文件保存路径，下载失败返回null
   static Future<String?> downloadFile(String url, String fileName) async {
-    // download image to app cache directory
+    // 下载图片到应用缓存目录
     final tempDir = (await getExternalStorageDirectory())!.path;
 
     final File file = File('$tempDir/$fileName');
@@ -72,6 +85,9 @@ class BloomeeDownloader {
     return null;
   }
 
+  /// 检查歌曲是否已下载
+  /// @param song 媒体项模型
+  /// @return 返回是否已下载的布尔值
   static Future<bool> alreadyDownloaded(MediaItemModel song) async {
     final tempDB = await BloomeeDBService.getDownloadDB(song);
     if (tempDB != null) {
@@ -87,6 +103,11 @@ class BloomeeDownloader {
     return false;
   }
 
+  /// 下载歌曲
+  /// @param song 媒体项模型
+  /// @param fileName 文件名
+  /// @param filePath 文件路径
+  /// @return 返回下载任务ID
   static Future<String?> downloadSong(MediaItemModel song,
       {required String fileName, required String filePath}) async {
     final String? taskId;
@@ -120,7 +141,9 @@ class BloomeeDownloader {
     }
     return null;
   }
-
+  /// 为歌曲添加元数据标签
+  /// @param song 媒体项模型，包含歌曲的标题、艺术家、专辑等信息
+  /// @param filePath 歌曲文件的路径
   static Future<void> songTagger(MediaItemModel song, String filePath) async {
     final hasStorageAccess =
         Platform.isAndroid ? await Permission.storage.isGranted : true;
@@ -162,13 +185,16 @@ class BloomeeDownloader {
     }
     // deleteFile(imgPath!);
   }
-
+  /// 删除指定文件
+  /// @param fileName 要删除的文件路径
   static Future<void> deleteFile(String fileName) async {
     final String filePath = fileName;
     final File file = File(filePath);
     await file.delete();
   }
-
+  /// 获取最新的YouTube链接
+  /// @param id YouTube视频ID
+  /// @return 返回最新的视频URL，如果获取失败返回null
   static Future<String?> latestYtLink(String id) async {
     final vidInfo = await BloomeeDBService.getYtLinkCache(id);
     if (vidInfo != null) {
@@ -196,7 +222,9 @@ class BloomeeDownloader {
       return await refreshYtLink(id);
     }
   }
-
+  /// 刷新YouTube链接
+  /// @param id YouTube视频ID
+  /// @return 返回刷新后的视频URL，如果刷新失败返回null
   static Future<String?> refreshYtLink(String id) async {
     String quality = "Low";
     await BloomeeDBService.getSettingStr(GlobalStrConsts.ytDownQuality)
@@ -216,7 +244,11 @@ class BloomeeDownloader {
       return null;
     }
   }
-
+  /// 获取有效的文件名
+  /// 如果文件名已存在，则通过添加序号来生成新的文件名
+  /// @param fileName 原始文件名
+  /// @param filePath 文件路径
+  /// @return 返回有效的文件名
   static Future<String> getValidFileName(
       String fileName, String filePath) async {
     final File file = File('$filePath/$fileName');

@@ -1,3 +1,6 @@
+/// 应用更新工具类
+/// 负责检查新版本和处理更新流程
+
 import 'dart:io';
 
 import 'package:Bloomee/screens/widgets/gradient_alert_widget.dart';
@@ -5,6 +8,9 @@ import 'package:Bloomee/services/bloomeeUpdaterTools.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+/// 显示更新对话框
+/// 检查是否有新版本可用，如果有则显示更新提示
+/// @param context 构建上下文
 Future<void> updateDialog(BuildContext context) async {
   if (Platform.isAndroid) {
     Map<String, dynamic> _updateData = await getLatestVersion();
@@ -25,6 +31,9 @@ Future<void> updateDialog(BuildContext context) async {
   }
 }
 
+/// 打开URL链接
+/// 在外部浏览器中打开指定的URL
+/// @param url 要打开的URL地址
 Future<void> openURL(String url) async {
   launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
 }
